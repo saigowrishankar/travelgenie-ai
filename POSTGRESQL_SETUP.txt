@@ -1,0 +1,111 @@
+══════════════════════════════════════════════════════
+  TravelGenie — PostgreSQL Setup Guide
+  (replaces MongoDB — same 5-minute effort)
+══════════════════════════════════════════════════════
+
+OPTION A — Local PostgreSQL (fastest for dev)
+─────────────────────────────────────────────
+
+1. Install PostgreSQL
+   macOS:   brew install postgresql@16 && brew services start postgresql@16
+   Ubuntu:  sudo apt install postgresql postgresql-contrib && sudo service postgresql start
+   Windows: https://www.postgresql.org/download/windows/
+
+2. Create the database and user
+   sudo -u postgres psql          # open psql as postgres superuser
+   (or just: psql postgres)
+
+   CREATE USER travelgenie WITH PASSWORD 'password';
+   CREATE DATABASE travelgenie OWNER travelgenie;
+   GRANT ALL PRIVILEGES ON DATABASE travelgenie TO travelgenie;
+   \q
+
+3. Add to your .env
+   DATABASE_URL=postgresql://travelgenie:password@localhost:5432/travelgenie
+
+4. Start the server — tables are auto-created on first boot
+   npm run start:dev
+
+   You should see:
+   [TravelGenie] Server running on http://localhost:8000
+
+
+OPTION B — Neon (free serverless PostgreSQL, like Atlas for Mongo)
+─────────────────────────────────────────────────────────────────────
+
+1. Go to https://neon.tech → sign up free (no credit card)
+2. Create a new project → name it "travelgenie"
+3. On the dashboard, click "Connection string"
+4. Copy the connection string — looks like:
+   postgresql://travelgenie:<password>@ep-xxx.us-east-2.aws.neon.tech/travelgenie?sslmode=require
+
+5. Add to .env:
+   DATABASE_URL=postgresql://travelgenie:<password>@ep-xxx.us-east-2.aws.neon.tech/travelgenie?sslmode=require
+
+6. npm run start:dev — tables created automatically
+
+
+OPTION C — Supabase (free PostgreSQL + dashboard)
+─────────────────────────────────────────────────────────────────────
+
+1. Go to https://supabase.com → sign up free
+2. New Project → name it "travelgenie"
+3. Settings → Database → Connection string → URI mode
+4. Copy the URI (starts with postgresql://...)
+5. Add to .env as DATABASE_URL
+
+
+══════════════════════════════════════════════════════
+  Tables created automatically (TypeORM synchronize)
+══════════════════════════════════════════════════════
+
+destinations
+  id              SERIAL PRIMARY KEY
+  destination_key VARCHAR(255) UNIQUE    -- normalised lowercase key
+  destination_name VARCHAR(255)
+  data            JSONB                  -- full AI payload
+  search_count    INTEGER DEFAULT 0
+  expires_at      TIMESTAMPTZ
+  last_searched   TIMESTAMPTZ
+  cached_at       TIMESTAMPTZ
+  updated_at      TIMESTAMPTZ
+
+rate_limit_users
+  id              SERIAL PRIMARY KEY
+  user_ip         VARCHAR(64) UNIQUE
+  searches_today  INTEGER DEFAULT 0
+  total_searches  INTEGER DEFAULT 0
+  window_start    TIMESTAMPTZ
+  is_pro          BOOLEAN DEFAULT false
+  last_seen       TIMESTAMPTZ
+
+search_logs
+  id              SERIAL PRIMARY KEY
+  destination     VARCHAR(255)
+  user_ip         VARCHAR(64)
+  cache_hit       BOOLEAN DEFAULT false
+  response_ms     INTEGER DEFAULT 0
+  created_at      TIMESTAMPTZ
+
+
+══════════════════════════════════════════════════════
+  Useful API endpoints
+══════════════════════════════════════════════════════
+
+GET  http://localhost:8000/               → Server status + cache count
+GET  http://localhost:8000/health         → PostgreSQL connection status
+POST http://localhost:8000/api/search     → Main search (body: { destination })
+GET  http://localhost:8000/api/cache/stats → Full analytics
+GET  http://localhost:8000/api/stats/top  → Top 10 most searched
+DEL  http://localhost:8000/api/cache/clear → Clear all cache
+
+
+══════════════════════════════════════════════════════
+  Cost estimate (Neon free tier)
+══════════════════════════════════════════════════════
+
+Free tier: 512MB storage, 190 compute hours/month.
+Each destination row is ~5KB (JSONB).
+512MB / 5KB = ~100,000 cached destinations.
+TravelGenie will never hit this limit.
+Neon free tier is genuinely free — no credit card needed.

@@ -1,0 +1,31 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SearchModule = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const destination_entity_1 = require("../entities/destination.entity");
+const user_entity_1 = require("../entities/user.entity");
+const search_log_entity_1 = require("../entities/search-log.entity");
+const search_controller_1 = require("./search.controller");
+const search_service_1 = require("./search.service");
+const rate_limit_service_1 = require("./rate-limit.service");
+const groq_service_1 = require("./groq.service");
+const destination_cache_service_1 = require("./destination-cache.service");
+let SearchModule = class SearchModule {
+};
+exports.SearchModule = SearchModule;
+exports.SearchModule = SearchModule = __decorate([
+    (0, common_1.Module)({
+        imports: [typeorm_1.TypeOrmModule.forFeature([destination_entity_1.Destination, user_entity_1.RateLimitUser, search_log_entity_1.SearchLog])],
+        controllers: [search_controller_1.SearchController],
+        providers: [search_service_1.SearchService, rate_limit_service_1.RateLimitService, groq_service_1.GeminiService, destination_cache_service_1.DestinationCacheService],
+        exports: [destination_cache_service_1.DestinationCacheService],
+    })
+], SearchModule);
+//# sourceMappingURL=search.module.js.map
